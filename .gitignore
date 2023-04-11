@@ -1,0 +1,8 @@
+.DS_Store
+.idea
+bin
+pkg
+go.sum
+jupiter
+vendor/**
+!vendor/vendor.json

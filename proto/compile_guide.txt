@@ -1,0 +1,17 @@
+# protoc
+- v3.3.0
+- download : https://github.com/protocolbuffers/protobuf/releases/latest
+
+#protoc-gen-go
+- 1.4.2
+- github.com/golang/protobuf@v1.4.2/protoc-gen-go
+
+# go example
+- mod version : github.com/golang/protobuf v1.4.1
+- mod version : google.golang.org/grpc v1.27.0
+- mod version : google.golang.org/protobuf v1.23.0
+
+# compile
+$ mkdir proto/ldap.adapter.v1
+$ protoc -I proto/ proto/*v1.proto --go-grpc_out=proto/ldap.adapter.v1 --go_out=proto/ldap.adapter.v1
+

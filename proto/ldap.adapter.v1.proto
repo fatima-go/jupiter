@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package ldap.adapter.v1;
+option go_package = ".;ldap_adapter_v1";
+
+service LdapAdapterService {
+  rpc Authenticate(AuthenticateRequest) returns (AuthenticateResponse)  {}
+}
+
+message AuthenticateRequest {
+  string  id = 1;
+  string  password = 2;
+}
+
+message AuthenticateResponse {
+  oneof response {
+    ResponseSuccess success = 1;
+    ResponseError	error = 2;
+  }
+  string role = 3;
+}
+
+message ResponseSuccess {
+}
+
+message ResponseError {
+  enum GrpcResponse {
+    UNIVERSAL = 0;
+    BAD_PARAMETER = 400;
+    UNAUTORIZED = 401;
+    FORBIDDEN = 403;
+    NOT_FOUND = 404;
+    NOT_ACCEPTABLE = 406;
+    SERVER_ERROR = 500;
+    SERVICE_UNAVAILABLE = 503;
+  }
+  enum ErrorCode {
+    SUCCESS = 0;
+    NO_RECORD = 100;
+    ERROR_RESPONSE = 101;
+    CONNECT_FAIL = 102;
+    ERROR_ETC = 103;
+  }
+  GrpcResponse grpcResponse = 1;
+  ErrorCode code = 2;
+  string  value = 3;
+  string  desc = 4;
+}
