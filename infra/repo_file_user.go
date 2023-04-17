@@ -26,12 +26,12 @@ package infra
 import (
 	"encoding/xml"
 	"fmt"
+	"github.com/fatima-go/fatima-core"
+	"github.com/fatima-go/fatima-log"
+	"github.com/fatima-go/jupiter/domain"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"throosea.com/fatima"
-	"throosea.com/jupiter/domain"
-	"throosea.com/log"
 )
 
 const (

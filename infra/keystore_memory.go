@@ -24,9 +24,9 @@
 package infra
 
 import (
+	"github.com/fatima-go/fatima-log"
+	"github.com/fatima-go/jupiter/domain"
 	"sync"
-	"throosea.com/jupiter/domain"
-	"throosea.com/log"
 	"time"
 )
 

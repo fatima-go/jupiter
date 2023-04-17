@@ -26,9 +26,9 @@ package web
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/fatima-go/fatima-log"
+	"github.com/fatima-go/jupiter/domain"
 	"net/http"
-	"throosea.com/jupiter/domain"
-	"throosea.com/log"
 	"time"
 )
 

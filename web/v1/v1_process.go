@@ -26,11 +26,11 @@ package v1
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/fatima-go/fatima-log"
+	"github.com/fatima-go/jupiter/domain"
+	"github.com/fatima-go/jupiter/web"
 	"io/ioutil"
 	"net/http"
-	"throosea.com/jupiter/domain"
-	"throosea.com/jupiter/web"
-	"throosea.com/log"
 )
 
 const (

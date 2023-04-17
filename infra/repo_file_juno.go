@@ -26,13 +26,13 @@ package infra
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/fatima-go/fatima-core"
+	"github.com/fatima-go/fatima-log"
+	"github.com/fatima-go/jupiter/domain"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
-	"throosea.com/fatima"
-	"throosea.com/jupiter/domain"
-	"throosea.com/log"
 )
 
 const (

@@ -25,15 +25,15 @@ package engine
 
 import (
 	"fmt"
+	"github.com/fatima-go/fatima-core"
+	"github.com/fatima-go/fatima-log"
+	"github.com/fatima-go/jupiter/service"
+	"github.com/fatima-go/jupiter/web"
+	"github.com/fatima-go/jupiter/web/v1"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"net/http"
 	"strings"
-	"throosea.com/fatima"
-	"throosea.com/jupiter/service"
-	"throosea.com/jupiter/web"
-	"throosea.com/jupiter/web/v1"
-	"throosea.com/log"
 	"time"
 )
 

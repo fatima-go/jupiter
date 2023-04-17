@@ -26,11 +26,11 @@ package auth
 import (
 	"errors"
 	"fmt"
+	"github.com/fatima-go/fatima-core"
+	"github.com/fatima-go/fatima-log"
+	. "github.com/fatima-go/jupiter/domain"
+	"github.com/fatima-go/jupiter/infra"
 	"strings"
-	"throosea.com/fatima"
-	. "throosea.com/jupiter/domain"
-	"throosea.com/jupiter/infra"
-	"throosea.com/log"
 )
 
 func NewBasicAuthenticator(fatimaRuntime fatima.FatimaRuntime) (Authenticate, error) {

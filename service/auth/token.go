@@ -25,11 +25,11 @@ package auth
 
 import (
 	"errors"
-	"throosea.com/fatima"
-	"throosea.com/fatima/lib"
-	. "throosea.com/jupiter/domain"
-	"throosea.com/jupiter/infra"
-	"throosea.com/log"
+	"github.com/fatima-go/fatima-core"
+	"github.com/fatima-go/fatima-core/lib"
+	"github.com/fatima-go/fatima-log"
+	. "github.com/fatima-go/jupiter/domain"
+	"github.com/fatima-go/jupiter/infra"
 	"time"
 )
 

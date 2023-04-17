@@ -24,8 +24,8 @@
 package web
 
 import (
+	"github.com/fatima-go/jupiter/domain"
 	"mime/multipart"
-	"throosea.com/jupiter/domain"
 	"time"
 )
 

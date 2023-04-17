@@ -25,9 +25,9 @@ package v1
 
 import (
 	"encoding/json"
+	"github.com/fatima-go/fatima-log"
+	"github.com/fatima-go/jupiter/web"
 	"net/http"
-	"throosea.com/jupiter/web"
-	"throosea.com/log"
 )
 
 func pack(controller web.JupiterServiceController, res http.ResponseWriter, req *http.Request) {

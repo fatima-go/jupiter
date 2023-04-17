@@ -23,7 +23,7 @@
 
 package infra
 
-import "throosea.com/jupiter/domain"
+import "github.com/fatima-go/jupiter/domain"
 
 func NewDefaultEncdec() domain.Encdec {
 	encdec := DefaultEncdec{}

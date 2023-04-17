@@ -25,10 +25,10 @@ package service
 
 import (
 	"fmt"
-	"throosea.com/fatima"
-	"throosea.com/jupiter/domain"
-	"throosea.com/jupiter/infra"
-	"throosea.com/jupiter/service/auth"
+	"github.com/fatima-go/fatima-core"
+	"github.com/fatima-go/jupiter/domain"
+	"github.com/fatima-go/jupiter/infra"
+	"github.com/fatima-go/jupiter/service/auth"
 )
 
 const (

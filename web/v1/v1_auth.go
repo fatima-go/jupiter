@@ -27,11 +27,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/fatima-go/fatima-log"
+	"github.com/fatima-go/jupiter/domain"
+	"github.com/fatima-go/jupiter/web"
 	"io"
 	"net/http"
-	"throosea.com/jupiter/domain"
-	"throosea.com/jupiter/web"
-	"throosea.com/log"
 )
 
 func authorize(controller web.JupiterServiceController, res http.ResponseWriter, req *http.Request) {

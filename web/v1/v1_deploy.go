@@ -24,11 +24,11 @@
 package v1
 
 import (
+	"github.com/fatima-go/fatima-log"
+	"github.com/fatima-go/jupiter/web"
 	"mime"
 	"mime/multipart"
 	"net/http"
-	"throosea.com/jupiter/web"
-	"throosea.com/log"
 )
 
 func deployPackage(controller web.JupiterServiceController, res http.ResponseWriter, req *http.Request) {

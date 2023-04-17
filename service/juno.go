@@ -24,12 +24,12 @@
 package service
 
 import (
+	"github.com/fatima-go/fatima-core/lib"
+	"github.com/fatima-go/fatima-log"
+	"github.com/fatima-go/jupiter/domain"
+	"github.com/fatima-go/jupiter/web"
 	"strings"
 	"sync"
-	"throosea.com/fatima/lib"
-	"throosea.com/jupiter/domain"
-	"throosea.com/jupiter/web"
-	"throosea.com/log"
 	"time"
 )
 

@@ -24,8 +24,8 @@
 package service
 
 import (
+	"github.com/fatima-go/jupiter/domain"
 	"strings"
-	"throosea.com/jupiter/domain"
 )
 
 func (interactor *DomainInteractor) GetEndpointList(groupName string, point domain.PackagePoint, address string) []string {

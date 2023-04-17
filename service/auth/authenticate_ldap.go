@@ -27,13 +27,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/fatima-go/fatima-core"
+	"github.com/fatima-go/fatima-log"
+	. "github.com/fatima-go/jupiter/domain"
+	proto "github.com/fatima-go/jupiter/proto/ldap.adapter.v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"sync"
-	"throosea.com/fatima"
-	. "throosea.com/jupiter/domain"
-	proto "throosea.com/jupiter/proto/ldap.adapter.v1"
-	"throosea.com/log"
 	"time"
 )
 

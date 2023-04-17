@@ -24,8 +24,8 @@
 package v1
 
 import (
+	"github.com/fatima-go/jupiter/web"
 	"net/http"
-	"throosea.com/jupiter/web"
 )
 
 func token(controller web.JupiterServiceController, res http.ResponseWriter, req *http.Request) {

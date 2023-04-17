@@ -25,7 +25,6 @@ package web
 
 import (
 	"github.com/gorilla/mux"
-	//"throosea.com/jupiter/domain"
 	"net/http"
 )
 

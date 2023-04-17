@@ -24,7 +24,7 @@
 package infra
 
 import (
-	"throosea.com/jupiter/domain"
+	"github.com/fatima-go/jupiter/domain"
 	"time"
 )
 

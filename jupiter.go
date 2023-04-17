@@ -24,8 +24,8 @@
 package main
 
 import (
-	"throosea.com/fatima/runtime"
-	"throosea.com/jupiter/engine"
+	"github.com/fatima-go/fatima-core/runtime"
+	"github.com/fatima-go/jupiter/engine"
 )
 
 func main() {
