@@ -28,5 +28,5 @@ type ProcRequest struct {
 	GroupId       string `json:"group_id,omitempty"`
 	Group         string `json:"group,omitempty"`
 	Package       string `json:"package,omitempty"`
-	ClientAddress string
+	ClientAddress string `json:"client_address,omitempty"`
 }
