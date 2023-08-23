@@ -61,7 +61,7 @@ func registProc(controller web.JupiterServiceController, res http.ResponseWriter
 	log.Debug("list : %s", endpointList)
 
 	httpClient := web.NewHttpClient(req)
-	procReq := domain.ProcRequest{Process: params.Process, GroupId: params.GroupId}
+	procReq := domain.ProcRequest{Process: params.Process, GroupId: params.GroupId, ClientAddress: params.ClientAddress}
 	data, err := json.Marshal(procReq)
 	if err != nil {
 		log.Warn("fail to prepare http client : %s", err.Error())
@@ -123,7 +123,7 @@ func unregistProc(controller web.JupiterServiceController, res http.ResponseWrit
 	log.Debug("list : %s", endpointList)
 
 	httpClient := web.NewHttpClient(req)
-	procReq := domain.ProcRequest{Process: params.Process, GroupId: params.GroupId}
+	procReq := domain.ProcRequest{Process: params.Process, GroupId: params.GroupId, ClientAddress: params.ClientAddress}
 	data, err := json.Marshal(procReq)
 	if err != nil {
 		log.Warn("fail to prepare http client : %s", err.Error())
