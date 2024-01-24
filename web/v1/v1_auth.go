@@ -27,6 +27,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/fatima-go/fatima-core/crypt"
 	"github.com/fatima-go/fatima-log"
 	"github.com/fatima-go/jupiter/domain"
 	"github.com/fatima-go/jupiter/web"
@@ -81,6 +82,8 @@ func parsingUser(req *http.Request) (*domain.User, error) {
 	if len(user.Id) < 3 || len(user.Password) < 3 {
 		return nil, errors.New("unknown id or invalid password")
 	}
+
+	user.Password = crypt.ResolveSecret(user.Password)
 	return &user, nil
 }
 
