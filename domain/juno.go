@@ -95,7 +95,14 @@ type JunoRegistration struct {
 }
 
 func (jr *JunoRegistration) AsJunoPackage() JunoPackage {
-	return JunoPackage{Endpoint: jr.Endpoint, Host: jr.Host, Name: jr.Name, RegistDate: jr.RegistDate, Status: jr.Status}
+	pack := JunoPackage{}
+	pack.Endpoint = jr.Endpoint
+	pack.Host = jr.Host
+	pack.Name = jr.Name
+	pack.RegistDate = jr.RegistDate
+	pack.Status = jr.Status
+	pack.Platform = jr.Platform
+	return pack
 }
 
 type JunoEndpointResponse struct {
