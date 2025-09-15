@@ -30,6 +30,6 @@ import (
 
 func main() {
 	fatimaRuntime := runtime.GetFatimaRuntime()
-	fatimaRuntime.Regist(engine.NewWebServer(fatimaRuntime))
+	fatimaRuntime.Register(engine.NewWebServer(fatimaRuntime))
 	fatimaRuntime.Run()
 }
