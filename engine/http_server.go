@@ -24,6 +24,7 @@
 package engine
 
 import (
+	"context"
 	"fmt"
 	"github.com/fatima-go/fatima-core"
 	"github.com/fatima-go/fatima-log"
@@ -34,12 +35,14 @@ import (
 	"github.com/gorilla/mux"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
 
 const (
 	PropWebServerAddress = "webserver.address"
 	PropWebServerPort    = "webserver.port"
+	httpShutdownTimeout  = 3 * time.Second
 )
 
 func NewWebServer(fatimaRuntime fatima.FatimaRuntime) *JupiterHttpServer {
@@ -54,6 +57,8 @@ type JupiterHttpServer struct {
 	router        *mux.Router
 	loggingRouter http.Handler
 	listenAddress string
+	httpServer    *http.Server
+	shutdownOnce  sync.Once
 }
 
 func (server *JupiterHttpServer) Initialize() bool {
@@ -85,6 +90,13 @@ func (server *JupiterHttpServer) Initialize() bool {
 	server.webService.GenerateSubRouter(server.router)
 	server.loggingRouter = handlers.LoggingHandler(server, server.router)
 
+	server.httpServer = &http.Server{
+		Handler:      server.loggingRouter,
+		Addr:         server.listenAddress,
+		WriteTimeout: 60 * time.Second,
+		ReadTimeout:  60 * time.Second,
+	}
+
 	return true
 }
 
@@ -111,8 +123,30 @@ func (server *JupiterHttpServer) Bootup() {
 	log.Info("JupiterHttpServer Bootup()")
 }
 
+func (server *JupiterHttpServer) Goaway() {
+	log.Info("JupiterHttpServer Goaway()")
+	server.gracefulShutdown()
+}
+
 func (server *JupiterHttpServer) Shutdown() {
 	log.Info("JupiterHttpServer Shutdown()")
+	server.gracefulShutdown()
+}
+
+// gracefulShutdown stops accepting new connections and drains in-flight requests,
+// bounded by httpShutdownTimeout. Idempotent so it can be driven from both Goaway
+// (graceful window) and Shutdown (final teardown) without closing twice.
+func (server *JupiterHttpServer) gracefulShutdown() {
+	server.shutdownOnce.Do(func() {
+		if server.httpServer == nil {
+			return
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), httpShutdownTimeout)
+		defer cancel()
+		if err := server.httpServer.Shutdown(ctx); err != nil {
+			log.Warn("JupiterHttpServer graceful shutdown error : %s", err.Error())
+		}
+	})
 }
 
 func (server *JupiterHttpServer) GetType() fatima.FatimaComponentType {
@@ -122,18 +156,10 @@ func (server *JupiterHttpServer) GetType() fatima.FatimaComponentType {
 func (server *JupiterHttpServer) StartListening() {
 	log.Info("called JupiterHttpServer StartListening()")
 
-	srv := &http.Server{
-		Handler:      server.loggingRouter,
-		Addr:         server.listenAddress,
-		WriteTimeout: 60 * time.Second,
-		ReadTimeout:  60 * time.Second,
-	}
-
 	log.Info("start web server listening...")
-	err := srv.ListenAndServe()
-	if err != nil {
+	err := server.httpServer.ListenAndServe()
+	if err != nil && err != http.ErrServerClosed {
 		log.Error("fail to start web server : %s", err.Error())
 		server.fatimaRuntime.Stop()
 	}
-
 }
