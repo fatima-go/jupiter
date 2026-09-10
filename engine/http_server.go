@@ -27,12 +27,16 @@ import (
 	"context"
 	"fmt"
 	"github.com/fatima-go/fatima-core"
+	"github.com/fatima-go/fatima-core/opm/api"
+	"github.com/fatima-go/fatima-core/opm/transport"
 	"github.com/fatima-go/fatima-log"
+	"github.com/fatima-go/jupiter/deployment"
 	"github.com/fatima-go/jupiter/service"
 	"github.com/fatima-go/jupiter/web"
 	"github.com/fatima-go/jupiter/web/v1"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"google.golang.org/grpc"
 	"net/http"
 	"strings"
 	"sync"
@@ -52,13 +56,15 @@ func NewWebServer(fatimaRuntime fatima.FatimaRuntime) *JupiterHttpServer {
 }
 
 type JupiterHttpServer struct {
-	fatimaRuntime fatima.FatimaRuntime
-	webService    *web.WebService
-	router        *mux.Router
-	loggingRouter http.Handler
-	listenAddress string
-	httpServer    *http.Server
-	shutdownOnce  sync.Once
+	fatimaRuntime    fatima.FatimaRuntime
+	webService       *web.WebService
+	router           *mux.Router
+	loggingRouter    http.Handler
+	listenAddress    string
+	httpServer       *http.Server
+	transportServer  *transport.Server
+	deploymentServer *deployment.Server
+	shutdownOnce     sync.Once
 }
 
 func (server *JupiterHttpServer) Initialize() bool {
@@ -96,6 +102,16 @@ func (server *JupiterHttpServer) Initialize() bool {
 		WriteTimeout: 60 * time.Second,
 		ReadTimeout:  60 * time.Second,
 	}
+	server.deploymentServer, err = server.newDeploymentV2(domainInteractor)
+	g := grpc.NewServer()
+	caps := &api.Capabilities{Server: "jupiter", ApiVersion: 2, Features: []string{"unavailable"}}
+	if err != nil {
+		log.Error("deployment v2 unavailable; legacy HTTP remains active: %s", err.Error())
+	} else {
+		server.deploymentServer.Register(g)
+		caps = server.deploymentServer.Capabilities()
+	}
+	server.transportServer = transport.NewServer(server.httpServer, g, caps)
 
 	return true
 }
@@ -143,7 +159,10 @@ func (server *JupiterHttpServer) gracefulShutdown() {
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), httpShutdownTimeout)
 		defer cancel()
-		if err := server.httpServer.Shutdown(ctx); err != nil {
+		if server.deploymentServer != nil {
+			server.deploymentServer.Close()
+		}
+		if err := server.transportServer.Shutdown(ctx); err != nil {
 			log.Warn("JupiterHttpServer graceful shutdown error : %s", err.Error())
 		}
 	})
@@ -157,7 +176,10 @@ func (server *JupiterHttpServer) StartListening() {
 	log.Info("called JupiterHttpServer StartListening()")
 
 	log.Info("start web server listening...")
-	err := server.httpServer.ListenAndServe()
+	if server.deploymentServer != nil {
+		server.deploymentServer.StartWorkers()
+	}
+	err := server.transportServer.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
 		log.Error("fail to start web server : %s", err.Error())
 		server.fatimaRuntime.Stop()
