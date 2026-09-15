@@ -2,8 +2,11 @@ package engine
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
+	"time"
 
 	"github.com/fatima-go/fatima-core/crypt"
 	"github.com/fatima-go/fatima-core/opm/api"
@@ -48,6 +51,14 @@ func (server *JupiterHttpServer) newDeploymentV2(interactor *service.DomainInter
 	s, err := deployment.New(root, login, targets)
 	if err != nil {
 		return nil, err
+	}
+	if value, ok := server.fatimaRuntime.GetConfig().GetValue("deployment.v2.target.interval.seconds"); ok {
+		seconds, err := strconv.ParseInt(value, 10, 32)
+		if err != nil || seconds < 0 {
+			s.Close()
+			return nil, fmt.Errorf("deployment.v2.target.interval.seconds must be a non-negative integer")
+		}
+		s.TargetInterval = time.Duration(seconds) * time.Second
 	}
 	s.Inventory = func() ([]*api.PackageEntry, error) {
 		b, e := os.ReadFile(filepath.Join(guide.GetDataFolder(), "juno.json"))

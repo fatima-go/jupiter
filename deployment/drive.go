@@ -39,6 +39,7 @@ func (s *Server) dispatch(id, op, state string) (bool, error) {
 		}
 		for _, t := range r.Plan.Targets {
 			if t.Operation.Id == op {
+				r.Plan.NextTargetStartAt = 0
 				t.Operation.State = state
 				r.Plan.Revision++
 				allowed = true
@@ -51,8 +52,11 @@ func (s *Server) dispatch(id, op, state string) (bool, error) {
 }
 func (s *Server) recordOperation(id string, op *api.Operation) error {
 	return s.change(id, func(p *api.Rollout) {
-		for _, t := range p.Targets {
+		for i, t := range p.Targets {
 			if t.Operation.Id == op.Id {
+				if op.State == "SUCCEEDED" && t.Operation.State != "SUCCEEDED" && i > 0 && i < len(p.Targets)-1 && !p.CancelRequested && s.TargetInterval > 0 {
+					p.NextTargetStartAt = s.Now().Add(s.TargetInterval).UnixMilli()
+				}
 				t.Operation = op
 				break
 			}
@@ -70,6 +74,7 @@ func (s *Server) stopAfterFailure(id string, t *api.TargetRun, err error) {
 				r.Operation.FinishedAt = s.Now().Unix()
 			}
 		}
+		p.NextTargetStartAt = 0
 		p.CancelRequested = true
 		p.EndReason = "DEPLOYMENT_FAILED"
 		p.Message = err.Error()
@@ -129,6 +134,12 @@ func (s *Server) drive(id string) {
 			})
 			return
 		}
+		if p.NextTargetStartAt > s.Now().UnixMilli() {
+			if !s.pause() {
+				return
+			}
+			continue
+		}
 		// Previously completed revisions must still match before another deployment.
 		for i := 0; i < index; i++ {
 			prev := p.Targets[i]
@@ -146,6 +157,7 @@ func (s *Server) drive(id string) {
 		if status.Code(err) == codes.NotFound {
 			if p.Artifact.ExpiresAt < s.Now().Add(ExecutionBudget).Unix() {
 				_ = s.change(id, func(p *api.Rollout) {
+					p.NextTargetStartAt = 0
 					p.CancelRequested = true
 					p.EndReason = "ARTIFACT_EXPIRED"
 					p.Message = "배포 파일 만료 · 미실행 작업 정리"

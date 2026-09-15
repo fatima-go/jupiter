@@ -43,6 +43,7 @@ type Server struct {
 	Targets        func() ([]*api.Target, error)
 	Peer           Peer
 	Now            func() time.Time
+	TargetInterval time.Duration // Configured before starting workers; zero disables the gap.
 	instance       string
 	key            []byte
 	ctx            context.Context
@@ -82,7 +83,7 @@ func New(root string, login func(string, string) (string, error), targets func()
 	if e != nil {
 		return nil, e
 	}
-	s := &Server{Store: st, LoginUser: login, Targets: targets, Peer: grpcPeer{}, Now: time.Now, instance: transport.ID("jupiter_"), running: map[string]bool{}}
+	s := &Server{Store: st, LoginUser: login, Targets: targets, Peer: grpcPeer{}, Now: time.Now, TargetInterval: 5 * time.Second, instance: transport.ID("jupiter_"), running: map[string]bool{}}
 	s.ctx, s.cancel = context.WithCancel(context.Background())
 	var key struct{ Value string }
 	e = st.Update("signing-key", &key, func() error {

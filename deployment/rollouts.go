@@ -287,6 +287,7 @@ func (a *rolloutAPI) Act(ctx context.Context, q *api.RolloutAction) (*api.Rollou
 			if !active(p.State) {
 				return nil
 			}
+			p.NextTargetStartAt = 0
 			p.CancelRequested = true
 			p.EndReason = "USER_CANCELLED"
 			p.State = "RUNNING"
@@ -361,6 +362,7 @@ func (s *Server) tick() {
 		expireManagement(&db, s.Now().UnixMilli())
 		for id, r := range db.Records {
 			if r.Plan.State == "WAITING" && r.Plan.Artifact.ExpiresAt <= s.Now().Unix() {
+				r.Plan.NextTargetStartAt = 0
 				r.Plan.CancelRequested = true
 				r.Plan.EndReason = "ARTIFACT_EXPIRED"
 				r.Plan.State = "RUNNING"

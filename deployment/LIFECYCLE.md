@@ -24,3 +24,9 @@ Retention failures do not prevent lifecycle ticks.
 
 For coordinated source builds, go.mod resolves fatima-core from ../fatima-core.
 Replace this with a released module version when publishing standalone sources.
+
+## Sequential target interval
+
+`deployment.v2.target.interval.seconds` defaults to 5; 0 disables the gap. Set a non-negative integer in Jupiter configuration before startup. Invalid values prevent the deployment service from starting.
+
+The second target starts immediately after first-target approval. After confirmed success of each subsequent target, Jupiter persists `next_target_start_at` together with the successful result before waiting. No gap follows the last target. Restart/reconciliation preserves the deadline; worker lease recovery may delay execution further. Cancellation and management expiry clear the deadline and prevent subsequent dispatch. Separate rollouts wait independently. This interval does not perform an application health check.

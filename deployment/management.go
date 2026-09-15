@@ -68,6 +68,7 @@ func closeManagement(db *rolloutDB, r *managementRecord, reason string) {
 	r.Session.State = reason
 	if rec := db.Records[r.Session.RolloutId]; rec != nil && !lifecycle.Terminal(rec.Plan.State) {
 		p := rec.Plan
+		p.NextTargetStartAt = 0
 		p.CancelRequested = true
 		p.EndReason = reason
 		p.State = "RUNNING"
