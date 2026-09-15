@@ -94,3 +94,12 @@ func (grpcPeer) Observe(ctx context.Context, endpoint, id, token string, progres
 		}
 	}
 }
+
+func (grpcPeer) Cancel(ctx context.Context, endpoint string, spec *api.OperationSpec, token string) (*api.Operation, error) {
+	c, err := transport.Dial(endpoint)
+	if err != nil {
+		return nil, err
+	}
+	defer c.Close()
+	return api.NewPackageDeploymentClient(c).Cancel(transport.WithToken(ctx, token), spec)
+}

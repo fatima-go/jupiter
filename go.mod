@@ -22,3 +22,5 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260518230821-037a81a441c8 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/fatima-go/fatima-core => ../fatima-core

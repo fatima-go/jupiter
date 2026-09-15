@@ -9,6 +9,7 @@ import (
 
 	"github.com/fatima-go/fatima-core/opm/api"
 	"github.com/fatima-go/fatima-core/opm/artifact"
+	"github.com/fatima-go/fatima-core/opm/lifecycle"
 	"github.com/fatima-go/fatima-core/opm/transport"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -44,6 +45,7 @@ func (s *Server) targets(ctx context.Context, group string) ([]*api.Target, erro
 		case caps.Server != "juno" || !transport.Supports(caps, "deployment"):
 			t.Reason = "deployment API unavailable"
 		default:
+			t.CancelSupported = transport.Supports(caps, lifecycle.CancelFeature)
 			t.Supported = true
 			t.Platform = caps.Platform
 		}
@@ -78,7 +80,7 @@ func (a *rolloutAPI) Create(ctx context.Context, q *api.CreateRollout) (*api.Rol
 			if r.RequestHash != hash {
 				return nil, status.Error(codes.AlreadyExists, "request ID conflict")
 			}
-			return r.Plan, nil
+			return publicRollout(r.Plan), nil
 		}
 	}
 	art, e := a.s.getArtifact(q.ArtifactId)
@@ -106,6 +108,9 @@ func (a *rolloutAPI) Create(ctx context.Context, q *api.CreateRollout) (*api.Rol
 			continue
 		}
 		delete(wanted, t.PackageId)
+		if q.Management != nil && !t.CancelSupported {
+			return nil, status.Error(codes.FailedPrecondition, "Juno does not support managed cancellation; update every selected Juno")
+		}
 		if !t.Supported {
 			return nil, status.Errorf(codes.FailedPrecondition, "%s: %s; no deployment submitted", t.PackageId, t.Reason)
 		}
@@ -145,8 +150,22 @@ func (a *rolloutAPI) Create(ctx context.Context, q *api.CreateRollout) (*api.Rol
 				return nil
 			}
 			if active(r.Plan.State) && r.Plan.Group == p.Group && r.Plan.Artifact.Process == art.Process {
-				return status.Errorf(codes.Aborted, "active rollout %s already owns this group/process", r.Plan.Id)
+				return conflict(r.Plan)
 			}
+		}
+		if q.Management != nil {
+			r, err := managementOwner(&db, q.Management, actor.Username)
+			if err != nil {
+				return err
+			}
+			if r.Session.State != "ACTIVE" || a.s.Now().UnixMilli() >= r.Session.ExpiresAt {
+				return status.Error(codes.FailedPrecondition, "management session expired; open a new session")
+			}
+			if r.Session.RolloutId != "" {
+				return status.Error(codes.FailedPrecondition, "management session already owns a rollout")
+			}
+			r.Session.RolloutId = p.Id
+			p.ManagementSessionId = r.Session.Id
 		}
 		db.Records[p.Id] = &rolloutRecord{Plan: p, RequestID: requestID, RequestHash: hash}
 		return nil
@@ -154,7 +173,7 @@ func (a *rolloutAPI) Create(ctx context.Context, q *api.CreateRollout) (*api.Rol
 	return p, internal(e)
 }
 func active(state string) bool {
-	return state != "SUCCEEDED" && state != "CANCELLED" && state != "EXPIRED"
+	return !lifecycle.Terminal(state)
 }
 func (s *Server) getRollout(id string) (*api.Rollout, error) {
 	var db rolloutDB
@@ -165,7 +184,7 @@ func (s *Server) getRollout(id string) (*api.Rollout, error) {
 	if r == nil {
 		return nil, status.Error(codes.NotFound, "rollout not found")
 	}
-	return r.Plan, nil
+	return publicRollout(r.Plan), nil
 }
 func (a *rolloutAPI) Get(ctx context.Context, q *api.RolloutQuery) (*api.Rollout, error) {
 	if _, e := a.s.authorize(ctx, "MONITOR", nil); e != nil {
@@ -183,7 +202,7 @@ func (a *rolloutAPI) List(ctx context.Context, _ *api.Empty) (*api.RolloutList, 
 	}
 	result := &api.RolloutList{}
 	for _, r := range db.Records {
-		result.Rollouts = append(result.Rollouts, r.Plan)
+		result.Rollouts = append(result.Rollouts, publicRollout(r.Plan))
 	}
 	sort.Slice(result.Rollouts, func(i, j int) bool { return result.Rollouts[i].CreatedAt > result.Rollouts[j].CreatedAt })
 	return result, nil
@@ -200,8 +219,26 @@ func (a *rolloutAPI) Act(ctx context.Context, q *api.RolloutAction) (*api.Rollou
 			return status.Error(codes.NotFound, "rollout not found")
 		}
 		p = r.Plan
-		if p.Revision != q.ExpectedRevision {
+		wasRunning := p.State == "RUNNING"
+		// Cancellation only narrows work; progress updates must not invalidate it.
+		if p.Revision != q.ExpectedRevision && q.Action != "cancel" {
 			return status.Error(codes.Aborted, "rollout changed; refresh before confirming")
+		}
+		if q.Action != "cancel" {
+			if p.CancelRequested && !(q.Action == "retry" && p.EndReason == "DEPLOYMENT_FAILED") {
+				return status.Error(codes.FailedPrecondition, "cancel requested; create a new deployment after cleanup")
+			}
+			if p.ManagementSessionId != "" {
+				r := db.Sessions[p.ManagementSessionId]
+				if r == nil || r.Session.State != "ACTIVE" || a.s.Now().UnixMilli() >= r.Session.ExpiresAt {
+					return status.Error(codes.FailedPrecondition, "owner has left; create a new deployment after cleanup")
+				}
+			}
+			for _, other := range db.Records {
+				if other.Plan.Id != p.Id && active(other.Plan.State) && other.Plan.Group == p.Group && other.Plan.Artifact.Process == p.Artifact.Process {
+					return conflict(other.Plan)
+				}
+			}
 		}
 		switch q.Action {
 		case "continue":
@@ -228,7 +265,7 @@ func (a *rolloutAPI) Act(ctx context.Context, q *api.RolloutAction) (*api.Rollou
 				return status.Error(codes.FailedPrecondition, "artifact has less than 30 minutes remaining")
 			}
 			for _, t := range p.Targets {
-				if t.Operation.State == "FAILED" || t.Operation.State == "INTERRUPTED" {
+				if t.Operation.State == "FAILED" || t.Operation.State == "INTERRUPTED" || t.Operation.State == "CANCELLED" {
 					t.PreviousAttempts = append(t.PreviousAttempts, t.Operation)
 					t.Operation = proto.Clone(t.Operation).(*api.Operation)
 					t.Operation.Id = transport.ID("o_")
@@ -240,34 +277,33 @@ func (a *rolloutAPI) Act(ctx context.Context, q *api.RolloutAction) (*api.Rollou
 					t.Operation.RevisionPath = ""
 					t.Operation.PreviousRevision = ""
 					t.SentBytes = 0
-					break
 				}
 			}
 			p.State = "RUNNING"
 			p.Message = "retry approved"
+			p.CancelRequested = false
+			p.EndReason = ""
 		case "cancel":
 			if !active(p.State) {
-				return status.Error(codes.FailedPrecondition, "rollout already finished")
+				return nil
 			}
-			// An uncertain/running Juno is not forcibly terminated. Reconciliation must
-			// establish its result before releasing the group/process reservation.
 			p.CancelRequested = true
-			if p.State == "ATTENTION" {
-				p.State = "RUNNING"
-			}
-			if p.State != "RUNNING" {
-				p.State = "CANCELLED"
-			}
-			p.Message = "stop requested; any accepted operation finishes before cancellation"
+			p.EndReason = "USER_CANCELLED"
+			p.State = "RUNNING"
+			p.NextCheckAt = 0
+			p.Message = "남은 배포 취소 중 · 이미 실행한 대상의 결과 확인"
 		default:
 			return status.Error(codes.InvalidArgument, "unknown action")
 		}
 		p.Revision++
-		r.Owner = ""
-		r.LeaseUntil = 0
+		p.NextCheckAt = 0
+		if !wasRunning {
+			r.Owner = ""
+			r.LeaseUntil = 0
+		}
 		return nil
 	})
-	return p, internal(e)
+	return publicRolloutIfPresent(p), internal(e)
 }
 func (a *rolloutAPI) Watch(q *api.WatchRequest, stream grpc.ServerStreamingServer[api.Rollout]) error {
 	if _, e := a.s.authorize(stream.Context(), "MONITOR", nil); e != nil {
@@ -318,17 +354,21 @@ func (s *Server) StartWorkers() {
 	}()
 }
 func (s *Server) tick() {
-	if e := s.expireArtifacts(); e != nil {
-		return
-	}
+	_ = s.expireArtifacts() // Retention failures must not stop reconciliation.
 	var db rolloutDB
 	var ids []string
 	e := s.Store.Update("rollouts", &db, func() error {
+		expireManagement(&db, s.Now().UnixMilli())
 		for id, r := range db.Records {
 			if r.Plan.State == "WAITING" && r.Plan.Artifact.ExpiresAt <= s.Now().Unix() {
-				r.Plan.State = "EXPIRED"
+				r.Plan.CancelRequested = true
+				r.Plan.EndReason = "ARTIFACT_EXPIRED"
+				r.Plan.State = "RUNNING"
 				r.Plan.Message = "artifact expired while awaiting approval"
 				r.Plan.Revision++
+			}
+			if r.Plan.State == "ATTENTION" && r.Plan.NextCheckAt <= s.Now().UnixMilli() {
+				r.Plan.State = "RUNNING"
 			}
 			if r.Plan.State == "RUNNING" && (r.Owner == s.instance || r.LeaseUntil <= s.Now().Unix()) {
 				r.Owner = s.instance
@@ -373,160 +413,12 @@ func (s *Server) change(id string, fn func(*api.Rollout)) error {
 	})
 }
 func (s *Server) fail(id, state string, e error) {
-	_ = s.change(id, func(p *api.Rollout) { p.State = state; p.Message = e.Error() })
-}
-func (s *Server) drive(id string) {
-	for {
-		if s.ctx.Err() != nil {
-			return
+	_ = s.change(id, func(p *api.Rollout) {
+		p.State = state
+		p.Message = e.Error()
+		p.LastCheckedAt = s.Now().UnixMilli()
+		if state == "ATTENTION" {
+			p.NextCheckAt = s.Now().Add(3 * time.Second).UnixMilli()
 		}
-		p, e := s.getRollout(id)
-		if e != nil || p.State != "RUNNING" {
-			return
-		}
-		index := -1
-		for i, t := range p.Targets {
-			if t.Operation.State != "SUCCEEDED" {
-				index = i
-				break
-			}
-		}
-		if index < 0 {
-			_ = s.change(id, func(p *api.Rollout) { p.State = "SUCCEEDED"; p.Message = "all selected packages deployed" })
-			return
-		}
-		t := p.Targets[index]
-		if p.CancelRequested && t.Operation.State == "QUEUED" {
-			_ = s.change(id, func(p *api.Rollout) { p.State = "CANCELLED" })
-			return
-		}
-		if index > 0 && !p.RemainingApproved {
-			_ = s.change(id, func(p *api.Rollout) {
-				p.State = "WAITING"
-				p.Message = "first package completed; verify it, then approve remaining packages"
-			})
-			return
-		}
-		// Prior successes must still point at this revision. Legacy writes remain
-		// possible and are detected here instead of being restricted by v2.
-		for i := 0; i < index; i++ {
-			previous := p.Targets[i]
-			ctx, cancel := context.WithTimeout(s.ctx, 5*time.Second)
-			op, e := s.Peer.Get(ctx, previous.Target.Endpoint, previous.Operation.Id, s.ticket(p, previous))
-			cancel()
-			if e != nil || op == nil || op.State != "SUCCEEDED" {
-				s.fail(id, "ATTENTION", fmt.Errorf("verify previous package %s before continuing: %v", previous.Target.PackageId, e))
-				return
-			}
-		}
-		ctx, cancel := context.WithTimeout(s.ctx, 5*time.Second)
-		op, e := s.Peer.Get(ctx, t.Target.Endpoint, t.Operation.Id, s.ticket(p, t))
-		cancel()
-		if status.Code(e) == codes.NotFound {
-			if p.CancelRequested {
-				_ = s.change(id, func(p *api.Rollout) { p.State = "CANCELLED" })
-				return
-			}
-			if p.Artifact.ExpiresAt <= s.Now().Unix() {
-				s.fail(id, "EXPIRED", fmt.Errorf("artifact expired before dispatch"))
-				return
-			}
-			if p.Artifact.ExpiresAt < s.Now().Add(ExecutionBudget).Unix() {
-				s.fail(id, "ATTENTION", fmt.Errorf("artifact has less than 30 minutes remaining; no new operation dispatched"))
-				return
-			}
-			// Persist intent before sending: a lost response must be reconciled using
-			// the same operation ID, never replaced with a new deployment request.
-			if e = s.change(id, func(p *api.Rollout) { p.Targets[index].Operation.State = "STAGING" }); e != nil {
-				return
-			}
-			spec := &api.OperationSpec{Id: t.Operation.Id, ArtifactId: p.Artifact.Id, Sha256: p.Artifact.Sha256, Size: p.Artifact.Size, Process: p.Artifact.Process, PackageId: t.Target.PackageId, ExpiresAt: p.Artifact.ExpiresAt}
-			deadline := s.Now().Add(ExecutionBudget)
-			if expiry := time.Unix(p.Artifact.ExpiresAt, 0); expiry.Before(deadline) {
-				deadline = expiry
-			}
-			ctx, cancel = context.WithDeadline(s.ctx, deadline)
-			lastProgress := time.Time{}
-			op, e = s.Peer.Stage(ctx, t.Target.Endpoint, spec, s.artifactPath(p.Artifact.Id), s.ticket(p, t), func(n int64) {
-				if n != p.Artifact.Size && time.Since(lastProgress) < 200*time.Millisecond {
-					return
-				}
-				lastProgress = time.Now()
-				_ = s.change(id, func(p *api.Rollout) { p.Targets[index].SentBytes = n })
-			})
-			cancel()
-		}
-		if e != nil {
-			if s.ctx.Err() != nil {
-				return
-			}
-			s.fail(id, "ATTENTION", fmt.Errorf("%s: result uncertain; resume to reconcile operation %s: %w", t.Target.PackageId, t.Operation.Id, e))
-			return
-		}
-		if op.State == "STAGED" {
-			// Fully staged bytes may finish after the artifact retention deadline.
-			if p.CancelRequested {
-				_ = s.change(id, func(p *api.Rollout) { p.State = "CANCELLED" })
-				return
-			}
-			ctx, cancel = context.WithTimeout(s.ctx, 5*time.Second)
-			op, e = s.Peer.Start(ctx, t.Target.Endpoint, t.Operation.Id, s.ticket(p, t))
-			cancel()
-			if e != nil {
-				s.fail(id, "ATTENTION", fmt.Errorf("start response uncertain; resume operation %s: %w", t.Operation.Id, e))
-				return
-			}
-		}
-		if op.Id != t.Operation.Id || op.Sha256 != p.Artifact.Sha256 || op.PackageId != t.Target.PackageId {
-			s.fail(id, "ATTENTION", fmt.Errorf("Juno operation identity/digest mismatch"))
-			return
-		}
-		if observer, ok := s.Peer.(interface {
-			Observe(context.Context, string, string, string, func(*api.Operation) error) error
-		}); ok && op.State == "RUNNING" {
-			ctx, stop := context.WithTimeout(s.ctx, ExecutionBudget+time.Minute)
-			e = observer.Observe(ctx, t.Target.Endpoint, t.Operation.Id, s.ticket(p, t), func(snapshot *api.Operation) error {
-				if snapshot.Id != t.Operation.Id || snapshot.Sha256 != p.Artifact.Sha256 || snapshot.PackageId != t.Target.PackageId {
-					return fmt.Errorf("Juno operation identity/digest mismatch")
-				}
-				op = snapshot
-				return s.change(id, func(p *api.Rollout) {
-					p.Targets[index].Operation = snapshot
-					p.Targets[index].SentBytes = p.Artifact.Size
-				})
-			})
-			stop()
-			if e != nil {
-				if s.ctx.Err() != nil {
-					return
-				}
-				s.fail(id, "ATTENTION", fmt.Errorf("progress stream interrupted; resume operation %s: %w", t.Operation.Id, e))
-				return
-			}
-		}
-		if e = s.change(id, func(p *api.Rollout) {
-			p.Targets[index].Operation = op
-			if op.State != "STAGING" {
-				p.Targets[index].SentBytes = p.Artifact.Size
-			}
-		}); e != nil {
-			return
-		}
-		switch op.State {
-		case "SUCCEEDED":
-			continue
-		case "FAILED", "INTERRUPTED":
-			s.fail(id, "FAILED", fmt.Errorf("%s: %s", t.Target.PackageId, op.Error))
-			return
-		case "RUNNING":
-		default:
-			s.fail(id, "ATTENTION", fmt.Errorf("%s: unexpected operation state %s", t.Target.PackageId, op.State))
-			return
-		}
-		select {
-		case <-s.ctx.Done():
-			return
-		case <-time.After(500 * time.Millisecond):
-		}
-	}
+	})
 }

@@ -64,7 +64,10 @@ type rolloutRecord struct {
 	Owner       string
 	LeaseUntil  int64
 }
-type rolloutDB struct{ Records map[string]*rolloutRecord }
+type rolloutDB struct {
+	Records  map[string]*rolloutRecord
+	Sessions map[string]*managementRecord
+}
 type claims struct {
 	Username    string
 	Role        string
@@ -99,6 +102,7 @@ func New(root string, login func(string, string) (string, error), targets func()
 }
 
 func (s *Server) Register(g *grpc.Server) {
+	api.RegisterDeploymentManagementServer(g, &managementAPI{s: s})
 	api.RegisterProcessRegistryServer(g, &registryProxy{s: s})
 	api.RegisterPackageInventoryServer(g, &inventoryAPI{s: s})
 	api.RegisterRoutingServer(g, &routingAPI{s: s})
@@ -107,7 +111,7 @@ func (s *Server) Register(g *grpc.Server) {
 	api.RegisterDeploymentsServer(g, &rolloutAPI{s: s})
 }
 func (s *Server) Capabilities() *api.Capabilities {
-	return &api.Capabilities{Server: "jupiter", ApiVersion: 2, Features: []string{"artifacts", "rollouts", "progress", "resume", "routing", "ropack", "roproc"}, InstanceId: s.instance, ArtifactTtlSeconds: int64(ArtifactTTL / time.Second)}
+	return &api.Capabilities{Server: "jupiter", ApiVersion: 2, Features: []string{"artifacts", "rollouts", "progress", "resume", "routing", "ropack", "roproc", "deployment_management"}, InstanceId: s.instance, ArtifactTtlSeconds: int64(ArtifactTTL / time.Second)}
 }
 func (s *Server) Close() { s.cancel(); s.wg.Wait() }
 
