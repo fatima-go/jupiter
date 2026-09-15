@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/fatima-go/fatima-core/opm/api"
-	"github.com/fatima-go/fatima-core/opm/lifecycle"
+	"github.com/fatima-go/fatima-opm/api"
+	"github.com/fatima-go/fatima-opm/lifecycle"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

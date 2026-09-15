@@ -25,7 +25,7 @@ package service
 
 import (
 	"fmt"
-	"github.com/fatima-go/fatima-core"
+	"github.com/fatima-go/fatima-core/v2"
 	"github.com/fatima-go/jupiter/domain"
 	"github.com/fatima-go/jupiter/infra"
 	"github.com/fatima-go/jupiter/service/auth"

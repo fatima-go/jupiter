@@ -24,7 +24,7 @@
 package main
 
 import (
-	"github.com/fatima-go/fatima-core/runtime"
+	"github.com/fatima-go/fatima-core/v2/runtime"
 	"github.com/fatima-go/jupiter/engine"
 )
 

@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/fatima-go/fatima-core/crypt"
-	"github.com/fatima-go/fatima-core/opm/api"
+	"github.com/fatima-go/fatima-core/v2/crypt"
+	"github.com/fatima-go/fatima-opm/api"
 	"github.com/fatima-go/jupiter/deployment"
 	"github.com/fatima-go/jupiter/domain"
 	"github.com/fatima-go/jupiter/service"

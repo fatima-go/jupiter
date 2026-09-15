@@ -27,7 +27,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/fatima-go/fatima-core"
+	"github.com/fatima-go/fatima-core/v2"
 	"github.com/fatima-go/fatima-log"
 	. "github.com/fatima-go/jupiter/domain"
 	proto "github.com/fatima-go/jupiter/proto/ldap.adapter.v1"

@@ -6,9 +6,9 @@ import (
 	"crypto/subtle"
 	"encoding/hex"
 
-	"github.com/fatima-go/fatima-core/opm/api"
-	"github.com/fatima-go/fatima-core/opm/lifecycle"
-	"github.com/fatima-go/fatima-core/opm/transport"
+	"github.com/fatima-go/fatima-opm/api"
+	"github.com/fatima-go/fatima-opm/lifecycle"
+	"github.com/fatima-go/fatima-opm/transport"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"

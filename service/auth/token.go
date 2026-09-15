@@ -25,8 +25,8 @@ package auth
 
 import (
 	"errors"
-	"github.com/fatima-go/fatima-core"
-	"github.com/fatima-go/fatima-core/lib"
+	"github.com/fatima-go/fatima-core/v2"
+	"github.com/fatima-go/fatima-core/v2/lib"
 	"github.com/fatima-go/fatima-log"
 	. "github.com/fatima-go/jupiter/domain"
 	"github.com/fatima-go/jupiter/infra"

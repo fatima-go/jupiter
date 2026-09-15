@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fatima-go/fatima-core/opm/api"
+	"github.com/fatima-go/fatima-opm/api"
 	"google.golang.org/protobuf/proto"
 )
 

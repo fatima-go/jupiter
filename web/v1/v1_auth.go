@@ -27,7 +27,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/fatima-go/fatima-core/crypt"
+	"github.com/fatima-go/fatima-core/v2/crypt"
 	"github.com/fatima-go/fatima-log"
 	"github.com/fatima-go/jupiter/domain"
 	"github.com/fatima-go/jupiter/web"

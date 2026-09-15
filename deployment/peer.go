@@ -2,8 +2,8 @@ package deployment
 
 import (
 	"context"
-	"github.com/fatima-go/fatima-core/opm/api"
-	"github.com/fatima-go/fatima-core/opm/transport"
+	"github.com/fatima-go/fatima-opm/api"
+	"github.com/fatima-go/fatima-opm/transport"
 	"io"
 	"os"
 )

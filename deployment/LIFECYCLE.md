@@ -22,7 +22,7 @@ rollouts keep their existing lifetime; they can be viewed and explicitly
 cancelled. Upgrade an old Juno if a staged legacy operation cannot be sealed.
 Retention failures do not prevent lifecycle ticks.
 
-Standalone builds use the released fatima-core v1.3.7 module without a local replace.
+Standalone builds use the released fatima-core/v2 v2.0.0 and fatima-opm v1.0.0 modules without a local replace.
 
 ## Sequential target interval
 

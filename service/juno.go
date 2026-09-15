@@ -24,7 +24,7 @@
 package service
 
 import (
-	"github.com/fatima-go/fatima-core/lib"
+	"github.com/fatima-go/fatima-core/v2/lib"
 	"github.com/fatima-go/fatima-log"
 	"github.com/fatima-go/jupiter/domain"
 	"github.com/fatima-go/jupiter/web"

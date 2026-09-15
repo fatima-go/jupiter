@@ -3,8 +3,9 @@ module github.com/fatima-go/jupiter
 go 1.25.0
 
 require (
-	github.com/fatima-go/fatima-core v1.3.7
+	github.com/fatima-go/fatima-core/v2 v2.0.0
 	github.com/fatima-go/fatima-log v1.0.2
+	github.com/fatima-go/fatima-opm v1.0.0
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/mux v1.8.1
 	google.golang.org/grpc v1.81.1
