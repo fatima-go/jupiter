@@ -22,8 +22,7 @@ rollouts keep their existing lifetime; they can be viewed and explicitly
 cancelled. Upgrade an old Juno if a staged legacy operation cannot be sealed.
 Retention failures do not prevent lifecycle ticks.
 
-For coordinated source builds, go.mod resolves fatima-core from ../fatima-core.
-Replace this with a released module version when publishing standalone sources.
+Standalone builds use the released fatima-core v1.3.7 module without a local replace.
 
 ## Sequential target interval
 
