@@ -44,6 +44,7 @@ type Server struct {
 	Peer           Peer
 	Now            func() time.Time
 	TargetInterval time.Duration // Configured before starting workers; zero disables the gap.
+	Profile        string        // FATIMA_PROFILE of this Jupiter, returned on login so clients can assemble a FAR for it.
 	instance       string
 	key            []byte
 	ctx            context.Context
@@ -112,7 +113,7 @@ func (s *Server) Register(g *grpc.Server) {
 	api.RegisterDeploymentsServer(g, &rolloutAPI{s: s})
 }
 func (s *Server) Capabilities() *api.Capabilities {
-	return &api.Capabilities{Server: "jupiter", ApiVersion: 2, Features: []string{"artifacts", "rollouts", "progress", "resume", "routing", "ropack", "roproc", "deployment_management"}, InstanceId: s.instance, ArtifactTtlSeconds: int64(ArtifactTTL / time.Second)}
+	return &api.Capabilities{Server: "jupiter", ApiVersion: 2, Features: []string{"artifacts", "rollouts", "progress", "resume", "routing", "ropack", "roproc", "deployment_management", "session_profile"}, InstanceId: s.instance, ArtifactTtlSeconds: int64(ArtifactTTL / time.Second)}
 }
 func (s *Server) Close() { s.cancel(); s.wg.Wait() }
 
@@ -192,7 +193,7 @@ func (a *identityAPI) Login(ctx context.Context, r *api.LoginRequest) (*api.Sess
 		return nil, status.Error(codes.PermissionDenied, "unknown role")
 	}
 	c := claims{Username: r.Username, Role: role, ExpiresAt: a.s.Now().Add(time.Hour).Unix()}
-	return &api.Session{Token: a.s.sign(c), Username: c.Username, Role: c.Role, ExpiresAt: c.ExpiresAt}, nil
+	return &api.Session{Token: a.s.sign(c), Username: c.Username, Role: c.Role, ExpiresAt: c.ExpiresAt, Profile: a.s.Profile}, nil
 }
 func (a *identityAPI) Validate(ctx context.Context, r *api.ValidateRequest) (*api.Session, error) {
 	c, e := a.s.authorize(ctx, r.Role, r)

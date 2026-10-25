@@ -52,6 +52,7 @@ func (server *JupiterHttpServer) newDeploymentV2(interactor *service.DomainInter
 	if err != nil {
 		return nil, err
 	}
+	s.Profile = server.fatimaRuntime.GetEnv().GetProfile()
 	if value, ok := server.fatimaRuntime.GetConfig().GetValue("deployment.v2.target.interval.seconds"); ok {
 		seconds, err := strconv.ParseInt(value, 10, 32)
 		if err != nil || seconds < 0 {

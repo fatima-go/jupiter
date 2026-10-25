@@ -41,4 +41,5 @@ type JupiterServiceController interface {
 	GetPackageSummary(group string, location *time.Location) map[string]domain.PackageSummary
 	GetEndpointList(groupName string, point domain.PackagePoint, address string) []string
 	DeployPackage(mr *multipart.Reader, clientAddress string, token string) (string, error)
+	GetProfile() string
 }
