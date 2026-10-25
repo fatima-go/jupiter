@@ -61,6 +61,8 @@ func authorize(controller web.JupiterServiceController, res http.ResponseWriter,
 
 	vars := make(map[string]string)
 	vars["token"] = userToken
+	// 클라이언트가 배포 환경에 맞게 far 를 재조립할 수 있도록 profile 을 알려준다 (미설정이어도 빈 값으로 응답)
+	vars["profile"] = controller.GetProfile()
 	b, err := json.Marshal(vars)
 	if err != nil {
 		log.Warn("fail to build json response : %s", err.Error())

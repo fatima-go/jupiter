@@ -92,6 +92,11 @@ func (interactor *DomainInteractor) GenerateInstantToken(role domain.Role) strin
 	return token
 }
 
+// GetProfile jupiter 실행 환경의 profile(FATIMA_PROFILE)을 구한다
+func (interactor *DomainInteractor) GetProfile() string {
+	return interactor.fatimaRuntime.GetEnv().GetProfile()
+}
+
 func (interactor *DomainInteractor) ValidateToken(token string, role domain.Role) error {
 	return interactor.tokenService.ValidateToken(token, role)
 }

@@ -6,8 +6,8 @@ github.com/fatima-go/fatima-core/v2 v2.0.0 h1:FwtOrpwPBl22hsuEjKSCuRkjgZ+zs//DHn
 github.com/fatima-go/fatima-core/v2 v2.0.0/go.mod h1:YUKqBRl/vG/e2g8kJMnKWC4FDPQ/4V8h3YIFGbVAqrU=
 github.com/fatima-go/fatima-log v1.0.2 h1:SIEr4yN/dbBD6csuFiFrXdjCrOu+ZG9893pUcRHdJOA=
 github.com/fatima-go/fatima-log v1.0.2/go.mod h1:zwV6GGIKpQDYRVLJqZxSMuTq2rZEFblyt6QybPdlfgw=
-github.com/fatima-go/fatima-opm v1.0.0 h1:f51R+PmCzPA6cduD21DETbScnfS6DLBryui5j7b72q0=
-github.com/fatima-go/fatima-opm v1.0.0/go.mod h1:x+frSOmI8czCjkgRtJdgXBUk2/DKn0a9MmB/e/chbr4=
+github.com/fatima-go/fatima-opm v1.1.0 h1:aa7bAl/LFK1MdEF/+p5K/XT+ebEbMxuGSp6m36UN3KA=
+github.com/fatima-go/fatima-opm v1.1.0/go.mod h1:x+frSOmI8czCjkgRtJdgXBUk2/DKn0a9MmB/e/chbr4=
 github.com/felixge/httpsnoop v1.0.4 h1:NFTV2Zj1bL4mc9sqWACXbQFVBBg2W3GPvqp8/ESS2Wg=
 github.com/felixge/httpsnoop v1.0.4/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSwevea8zH2U=
 github.com/getsentry/sentry-go v0.46.2 h1:1jhYwrKGa3sIpo/y5iDNXS5wDoT7I1KNzMHrnK6ojns=
